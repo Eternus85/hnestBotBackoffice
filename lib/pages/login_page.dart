@@ -1,8 +1,10 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_login/flutter_login.dart';
 import 'package:hnest/helpers/auto_theme.dart';
 import 'package:hnest/helpers/palette_helper.dart';
 import 'package:hnest/pages/home_page.dart';
+import 'package:mysql_manager/src/mysql_manager.dart';
 
 const users = {
   'dribbble@gmail.com': '12345',
@@ -23,6 +25,7 @@ class LoginScreen extends StatelessWidget {
       if (users[data.name] != data.password) {
         return 'Password does not match';
       }
+      _openMySqlConnection();
       return null;
     });
   }
@@ -62,9 +65,7 @@ class LoginScreen extends StatelessWidget {
               accentColor: PaletteHelper.getColor(AppColorId.fieldColor.value),
               errorColor: PaletteHelper.getColor(AppColorId.fieldError.value),
               bodyStyle: AutoTheme.getH3Style(StyleDimension.bold),
-              cardTheme: CardTheme(
-                color: PaletteHelper.getColor(AppColorId.primaryCardColor.value)
-              ),
+              cardTheme: CardTheme(color: PaletteHelper.getColor(AppColorId.primaryCardColor.value)),
               inputTheme: InputDecorationTheme(
                 filled: true,
                 fillColor: PaletteHelper.getColor(AppColorId.fieldColor.value),
@@ -92,5 +93,32 @@ class LoginScreen extends StatelessWidget {
             )),
       ),
     );
+  }
+
+  _openMySqlConnection() async {
+    if (kDebugMode) {
+      print("Connecting to mysql server...");
+    }
+
+    try {
+      //The only way to instanciate MySQLManager is with the instance getter
+      final MySQLManager manager = MySQLManager.instance;
+      //initialize the connection. Init method will return a MySqlConnection object
+      final conn = await manager.init(
+        false,
+        {'db': 'thehuntersnest', 'host': '192.168.1.190', 'user': 'eternus', 'password': 'K@llisto1985', 'port': '3306'}
+      );
+      //you can pass sql to the query method
+      final results = await conn.execute("SELECT * FROM blac_list");
+      //results will be a iterator,so is possible to loop over it
+      for (var r in results) {
+        //returns data in Map<String,dynamic> format
+        print(r.rows);
+      }
+
+      await conn.close();
+    } on Exception catch (e) {
+      print("error: ${e.toString()}");
+    }
   }
 }
